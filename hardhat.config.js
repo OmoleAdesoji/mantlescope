@@ -5,7 +5,9 @@ require("dotenv").config();
 module.exports = {
   solidity: {
     version: "0.8.27",
-    settings: { optimizer: { enabled: true, runs: 200 } },
+    settings: {
+      optimizer: { enabled: true, runs: 200 }
+    },
   },
   networks: {
     mantleTestnet: {
@@ -29,7 +31,7 @@ module.exports = {
         network: "mantleTestnet",
         chainId: 5003,
         urls: {
-          apiURL: "https://api-sepolia.mantlescan.xyz/api",
+          apiURL: "https://api-sepolia.mantlescan.xyz/api?version=2&chainid=5003",
           browserURL: "https://sepolia.mantlescan.xyz",
         },
       },
@@ -37,7 +39,7 @@ module.exports = {
         network: "mantleMainnet",
         chainId: 5000,
         urls: {
-          apiURL: "https://api.mantlescan.xyz/api",
+          apiURL: "https://api.mantlescan.xyz/api?version=2&chainid=5000",
           browserURL: "https://mantlescan.xyz",
         },
       },

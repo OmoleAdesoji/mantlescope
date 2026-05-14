@@ -624,8 +624,10 @@ body::after {
 // ── Config ────────────────────────────────────────────────────────────────────
 const MANTLE_CHAIN_ID   = '0x138B'; // 5003 testnet
 const MANTLE_RPC        = 'https://rpc.sepolia.mantle.xyz';
+const MANTLE_API        = 'https://api-sepolia.mantlescan.xyz/api';
+const MANTLE_API_KEY    = ''; // add your MantleScan API key for V2 requests
 const MANTLE_EXPLORER   = 'https://sepolia.mantlescan.xyz';
-const CONTRACT_ADDRESS  = '0x0000000000000000000000000000000000000000'; // update after deploy
+const CONTRACT_ADDRESS  = '0x3cC1Efd62a9E467D7e38Ae26b6928197369B9Edf';
 
 const CONTRACT_ABI = [
   "function recordInsight(address wallet, string calldata summary, string calldata category, uint8 confidence) external returns (uint256)",
@@ -752,8 +754,9 @@ async function fetchWalletData(address) {
   // Fetch recent txs via Mantle Sepolia block explorer API
   let txs = [];
   try {
+    const apiKeyParam = MANTLE_API_KEY ? `&apiKey=${MANTLE_API_KEY}` : '';
     const resp = await fetch(
-      `https://api-sepolia.mantlescan.xyz/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&offset=20&page=1`
+      `${MANTLE_API}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&offset=20&page=1&version=2&chainid=5003${apiKeyParam}`
     );
     const data = await resp.json();
     if (data.status === '1' && data.result) txs = data.result.slice(0, 15);
@@ -762,64 +765,27 @@ async function fetchWalletData(address) {
   return { balance, txCount, txs };
 }
 
-// ── Analyse wallet with Claude AI ─────────────────────────────────────────────
+// ── Analyse wallet with Claude AI (via backend) ───────────────────────────────
 async function analyseWithAI(address, balance, txCount, txs) {
-  // Build tx summary for the prompt
-  const txSummary = txs.slice(0, 10).map(tx => {
-    const isOut = tx.from?.toLowerCase() === address.toLowerCase();
-    const val = fromWei(tx.value || '0');
-    return `${isOut ? 'OUT' : 'IN'} ${val} MNT | to: ${short(tx.to || '')} | ${tx.functionName || 'transfer'} | ${timeAgo(tx.timeStamp)}`;
-  }).join('\n');
-
-  const uniqueContracts = [...new Set(txs.filter(t => t.to !== address.toLowerCase()).map(t => t.to))].length;
-  const contractTxs     = txs.filter(t => t.input && t.input !== '0x').length;
-  const inbound         = txs.filter(t => t.to?.toLowerCase() === address.toLowerCase()).length;
-  const outbound        = txs.filter(t => t.from?.toLowerCase() === address.toLowerCase()).length;
-
-  const prompt = `You are an on-chain analyst for Mantle Network. Analyse this wallet and provide a concise intelligence report.
-
-WALLET: ${address}
-NETWORK: Mantle Sepolia (testnet)
-BALANCE: ${balance} MNT
-TOTAL TXS (nonce): ${txCount}
-RECENT TRANSACTIONS (last 20):
-${txSummary || 'No recent transactions found.'}
-
-STATS:
-- Unique contracts interacted with: ${uniqueContracts}
-- Contract calls (non-transfer): ${contractTxs}
-- Inbound txs: ${inbound}
-- Outbound txs: ${outbound}
-
-Respond with ONLY valid JSON in this exact format:
-{
-  "summary": "2-4 sentence plain English analysis of this wallet's behaviour and what type of user it likely belongs to. Be specific and insightful.",
-  "category": "one of: smart_money | whale | defi_power_user | retail | bot | unknown",
-  "confidence": <integer 0-100>,
-  "signals": {
-    "activity_level": "high | medium | low",
-    "primary_behaviour": "short label like 'DeFi trader' or 'HODLer' or 'bridge user'",
-    "risk_profile": "aggressive | moderate | conservative",
-    "notable": "one specific notable observation about this wallet"
-  }
-}
-
-Base confidence on how much transaction data is available. If very few txs, confidence should be 50-60. More data = higher confidence possible.`;
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  // Call backend API instead of Claude directly
+  const response = await fetch('http://localhost:3001/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 600,
-      messages: [{ role: 'user', content: prompt }],
+      address,
+      balance,
+      txCount,
+      txs
     }),
   });
 
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Backend analysis failed');
+  }
+
   const data = await response.json();
-  const raw  = data.content?.[0]?.text || '{}';
-  const clean = raw.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  return data;
 }
 
 // ── Render AI Insight ─────────────────────────────────────────────────────────

@@ -123,9 +123,10 @@ That sentence is readable by a journalist, a founder, an investor, or someone wh
 ## Deployment Info
 
 - **Network:** Mantle Sepolia Testnet (chainId: 5003)
-- **Contract:** *(update after deploy)*
-- **Explorer:** *(update after deploy)*
-- **Frontend:** *(update after deploy)*
+- **MantleScan API:** https://api-sepolia.mantlescan.xyz/api (use `version=2&chainid=5003` for V2 requests)
+- **Contract:** `0x3cC1Efd62a9E467D7e38Ae26b6928197369B9Edf`
+- **Explorer:** https://sepolia.mantlescan.xyz/address/0x3cC1Efd62a9E467D7e38Ae26b6928197369B9Edf
+- **Frontend:** `frontend/index.html` now points to the deployed contract address
 
 ---
 

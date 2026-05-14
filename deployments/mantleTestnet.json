@@ -1,0 +1,9 @@
+{
+  "contract": "MantleScope",
+  "address": "0x3cC1Efd62a9E467D7e38Ae26b6928197369B9Edf",
+  "network": "mantleTestnet",
+  "chainId": 5003,
+  "deployer": "0x494B45f79015736Bd2FFdB155581666780e0f5f3",
+  "deployedAt": "2026-05-08T22:19:55.592Z",
+  "explorer": "https://sepolia.mantlescan.xyz/address/0x3cC1Efd62a9E467D7e38Ae26b6928197369B9Edf"
+}
